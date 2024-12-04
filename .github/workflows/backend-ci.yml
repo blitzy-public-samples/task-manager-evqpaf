@@ -1,0 +1,199 @@
+# Requirements Addressed:
+# - Continuous Integration (Technical Specification/4.5 Development & Deployment/Deployment Pipeline)
+#   Automates the CI pipeline for backend services, ensuring code quality and build consistency.
+
+name: Backend CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'src/backend/**'
+      - '.github/workflows/backend-ci.yml'
+
+env:
+  NODE_VERSION: '20.x'
+  CI_ENV: 'development'
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout repository code
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # Setup Node.js environment
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'src/backend/package-lock.json'
+
+      # Install dependencies
+      - name: Install Dependencies
+        working-directory: src/backend
+        run: |
+          npm ci
+          echo "::group::Logging dependency installation"
+          node -e "
+            const { logger } = require('./shared/utils/logger');
+            logger.logInfo('Dependencies installed successfully');
+          "
+          echo "::endgroup::"
+
+      # Run linting
+      - name: Run ESLint
+        working-directory: src/backend
+        run: |
+          echo "::group::Running ESLint checks"
+          npm run lint
+          node -e "
+            const { logger } = require('./shared/utils/logger');
+            logger.logInfo('ESLint checks completed successfully');
+          "
+          echo "::endgroup::"
+
+      # Run unit and integration tests
+      - name: Run Tests
+        working-directory: src/backend
+        run: |
+          echo "::group::Running tests with Jest"
+          npm test -- --config=jest.config.ts --coverage
+          node -e "
+            const { logger } = require('./shared/utils/logger');
+            logger.logInfo('Test suite completed successfully');
+          "
+          echo "::endgroup::"
+
+      # Build backend services
+      - name: Build Backend
+        working-directory: src/backend
+        run: |
+          echo "::group::Building backend services"
+          chmod +x ./scripts/build.sh
+          ./scripts/build.sh
+          node -e "
+            const { logger } = require('./shared/utils/logger');
+            logger.logInfo('Backend build completed successfully');
+          "
+          echo "::endgroup::"
+
+      # Upload test coverage reports
+      - name: Upload Coverage Reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-reports
+          path: src/backend/coverage
+          retention-days: 14
+
+      # Handle job failure
+      - name: Handle Job Failure
+        if: failure()
+        working-directory: src/backend
+        run: |
+          node -e "
+            const { logger } = require('./shared/utils/logger');
+            logger.logError({
+              code: 'CI_PIPELINE_FAILED',
+              message: 'CI pipeline failed',
+              details: {
+                job: 'build-and-test',
+                workflow: 'Backend CI',
+                timestamp: new Date().toISOString()
+              }
+            });
+          "
+
+  security-scan:
+    name: Security Scan
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # Run npm audit
+      - name: Run Security Audit
+        working-directory: src/backend
+        run: |
+          echo "::group::Running npm audit"
+          npm audit
+          node -e "
+            const { logger } = require('./shared/utils/logger');
+            logger.logInfo('Security audit completed successfully');
+          "
+          echo "::endgroup::"
+
+      # Handle security scan failure
+      - name: Handle Security Scan Failure
+        if: failure()
+        working-directory: src/backend
+        run: |
+          node -e "
+            const { logger } = require('./shared/utils/logger');
+            logger.logError({
+              code: 'SECURITY_SCAN_FAILED',
+              message: 'Security scan failed',
+              details: {
+                job: 'security-scan',
+                workflow: 'Backend CI',
+                timestamp: new Date().toISOString()
+              }
+            });
+          "
+
+  notify:
+    name: Notification
+    needs: [build-and-test, security-scan]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # Send pipeline completion notification
+      - name: Send Pipeline Status
+        working-directory: src/backend
+        run: |
+          node -e "
+            const { logger } = require('./shared/utils/logger');
+            const success = '${{ needs.build-and-test.result }}' === 'success' && 
+                          '${{ needs.security-scan.result }}' === 'success';
+            
+            if (success) {
+              logger.logInfo('CI pipeline completed successfully');
+            } else {
+              logger.logError({
+                code: 'CI_PIPELINE_STATUS',
+                message: 'CI pipeline completed with failures',
+                details: {
+                  buildAndTest: '${{ needs.build-and-test.result }}',
+                  securityScan: '${{ needs.security-scan.result }}',
+                  timestamp: new Date().toISOString()
+                }
+              });
+            }
+          "
