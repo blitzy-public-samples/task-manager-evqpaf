@@ -1,0 +1,132 @@
+# Kubernetes version: 1.26+
+# Purpose: Defines the deployment configuration for the Notification Service
+#
+# Requirements Addressed:
+# - Notification Service Deployment (Technical Specification/System Architecture/Deployment Architecture)
+#   Implements scalable deployment configuration with resource management and environment-specific settings
+#
+# Human Tasks:
+# 1. Verify resource limits match production requirements
+# 2. Configure horizontal pod autoscaling if needed
+# 3. Set up monitoring and logging for the deployed pods
+# 4. Configure network policies for pod communication
+# 5. Verify container registry credentials are configured
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: task-management-system
+  labels:
+    app: notification-service
+    component: backend
+    tier: microservice
+  annotations:
+    description: "Notification Service deployment for handling email and WebSocket notifications"
+    maintainer: "platform-team"
+spec:
+  # Configure multiple replicas for high availability
+  replicas: 3
+  
+  # Pod selector using app label
+  selector:
+    matchLabels:
+      app: notification-service
+  
+  # Template for pod configuration
+  template:
+    metadata:
+      labels:
+        app: notification-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Security context for the pod
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+      
+      containers:
+      - name: notification-service
+        image: notification-service:latest
+        imagePullPolicy: Always
+        
+        # Configure container ports
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+        - name: websocket
+          containerPort: 8080
+          protocol: TCP
+        
+        # Resource limits and requests
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+          requests:
+            cpu: "250m"
+            memory: "128Mi"
+        
+        # Environment variables
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
+        - name: WEBSOCKET_PORT
+          value: "8080"
+        # Sensitive data from Secrets
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: task-management-secrets
+              key: DB_PASSWORD
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: task-management-secrets
+              key: JWT_SECRET
+        # Configuration from ConfigMap
+        - name: NOTIFICATION_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: task-management-config
+              key: NOTIFICATION_SERVICE_URL
+        
+        # Liveness probe configuration
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        
+        # Readiness probe configuration
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        # Startup probe configuration
+        startupProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30
+      
+      # Pod termination grace period
+      terminationGracePeriodSeconds: 60
