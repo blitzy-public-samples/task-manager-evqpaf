@@ -1,0 +1,42 @@
+# Kubernetes version: 1.26+
+# Purpose: Defines the Kubernetes Service resource for the Project Service
+# Requirements addressed:
+# - Technical Specification/System Architecture/Deployment Architecture/Service Exposure
+#   Exposes the Project Service internally within the Kubernetes cluster for other services to access
+
+# Human Tasks:
+# 1. Verify that port 8080 matches the container port configured in the Project Service deployment
+# 2. Ensure network policies allow traffic to this service from authorized sources
+# 3. If external access is needed, consider changing service type to LoadBalancer or using an Ingress resource
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: project-service
+  namespace: task-management-system
+  labels:
+    app: task-management
+    service: project-service
+  annotations:
+    description: "Project Service internal endpoint"
+    service.kubernetes.io/topology-aware-hints: "auto"  # Enable topology-aware routing if available
+    prometheus.io/scrape: "true"  # Enable Prometheus metrics scraping
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+
+spec:
+  type: ClusterIP  # Internal cluster access only
+  selector:
+    app: task-management
+    service: project-service
+  ports:
+    - name: http  # Named port for better service discovery
+      protocol: TCP
+      port: 80  # Service port
+      targetPort: 8080  # Container port
+  sessionAffinity: None  # No session stickiness required for stateless service
+  publishNotReadyAddresses: false  # Only route traffic to ready pods
+  ipFamilyPolicy: PreferDualStack  # Support both IPv4 and IPv6 if available
+  ipFamilies:
+    - IPv4
+    - IPv6
