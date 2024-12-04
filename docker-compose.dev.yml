@@ -1,0 +1,169 @@
+# Requirement Addressed: Local Development Environment
+# Location: Technical Specification/4.5 Development & Deployment/Development Tools
+# Description: Provides a Docker Compose configuration to run all services locally for development and testing.
+
+version: '3.8'
+
+services:
+  # API Gateway Service
+  api-gateway:
+    build:
+      context: ./src/backend/api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+    depends_on:
+      - task-service
+      - project-service
+      - user-service
+      - notification-service
+      - postgres
+      - redis
+    volumes:
+      - ./src/backend/api-gateway:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - backend-network
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ./src/backend/notification-service
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - SMTP_HOST=smtp.example.com
+      - SMTP_PORT=587
+    depends_on:
+      - redis
+    volumes:
+      - ./src/backend/notification-service:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - backend-network
+
+  # Project Service
+  project-service:
+    build:
+      context: ./src/backend/project-service
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=example_user
+      - DB_PASSWORD=example_password
+      - DB_NAME=example_database
+    depends_on:
+      - postgres
+    volumes:
+      - ./src/backend/project-service:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - backend-network
+
+  # Task Service
+  task-service:
+    build:
+      context: ./src/backend/task-service
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=development
+      - PORT=3003
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=example_user
+      - DB_PASSWORD=example_password
+      - DB_NAME=example_database
+    depends_on:
+      - postgres
+    volumes:
+      - ./src/backend/task-service:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - backend-network
+
+  # User Service
+  user-service:
+    build:
+      context: ./src/backend/user-service
+      dockerfile: Dockerfile
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=development
+      - PORT=3004
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=example_user
+      - DB_PASSWORD=example_password
+      - DB_NAME=example_database
+    depends_on:
+      - postgres
+    volumes:
+      - ./src/backend/user-service:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - backend-network
+
+  # Web Application
+  web:
+    build:
+      context: ./src/web
+      dockerfile: Dockerfile
+    ports:
+      - "8080:3000"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:3000
+    volumes:
+      - ./src/web:/app
+      - /app/node_modules
+    networks:
+      - frontend-network
+    depends_on:
+      - api-gateway
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=example_user
+      - POSTGRES_PASSWORD=example_password
+      - POSTGRES_DB=example_database
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend-network
+
+  # Redis Cache
+  redis:
+    image: redis:7.0
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  frontend-network:
+  backend-network:
