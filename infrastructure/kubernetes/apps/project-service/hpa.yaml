@@ -1,0 +1,62 @@
+# Kubernetes version: 1.26+
+# Purpose: Defines the Horizontal Pod Autoscaler (HPA) configuration for the Project Service
+#
+# Requirements Addressed:
+# - Dynamic Scaling (Technical Specification/System Architecture/2.2 Component Details)
+#   Ensures the Project Service can scale dynamically based on CPU and memory usage 
+#   to handle varying workloads efficiently.
+#
+# Human Tasks:
+# - Review and adjust scaling thresholds based on performance testing results
+# - Set up monitoring and alerting for scaling events
+# - Configure resource quotas for the namespace
+# - Validate HPA behavior in staging environment before production deployment
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: project-service-hpa
+  namespace: task-management-system
+  labels:
+    app: task-management
+    service: project-service
+  annotations:
+    description: "HPA configuration for Project Service"
+    owner: "platform-team"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: project-service
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    # CPU-based scaling
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    # Memory-based scaling
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  behavior:
+    scaleUp:
+      # Stabilization window to prevent rapid scaling
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 2  # Scale up by 2 pods at a time
+          periodSeconds: 60
+    scaleDown:
+      # Longer stabilization window for scale down to prevent thrashing
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1  # Scale down by 1 pod at a time
+          periodSeconds: 120
