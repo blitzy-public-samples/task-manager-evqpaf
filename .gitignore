@@ -1,0 +1,71 @@
+node_modules/
+
+# Build artifacts
+dist/
+build/
+out/
+
+# Test coverage reports
+coverage/
+
+# Log files
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Temporary files
+tmp/
+temp/
+
+# Test snapshots
+tests/**/*.snap
+
+# Docker volumes
+task_management_data/
+
+# Cache directories
+.npm/
+.eslintcache
+
+# Project-specific build directories
+src/backend/*/dist/
+src/backend/*/build/
+
+# Project-specific coverage directories
+src/backend/*/coverage/
+
+# Project-specific log directories
+src/backend/*/logs/
+
+# Project-specific environment files
+src/backend/*/.env
+src/backend/*/.env.*
+!src/backend/*/.env.example
+
+# Project-specific TypeScript build info
+src/backend/*/*.tsbuildinfo
+
+# Project-specific temporary files
+src/backend/*/tmp/
+src/backend/*/temp/
+
+# Project-specific test snapshots
+src/backend/*/tests/**/*.snap
