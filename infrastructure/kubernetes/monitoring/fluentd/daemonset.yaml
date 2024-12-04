@@ -1,0 +1,109 @@
+# Kubernetes version: 1.26+
+#
+# Human Tasks Required:
+# 1. Verify Fluentd image version (v1.14) compatibility with your Elasticsearch version
+# 2. Ensure fluentd-config ConfigMap is created with proper fluent.conf configuration
+# 3. Verify node permissions for accessing /var/log directory
+# 4. Review resource limits based on log volume and node capacity
+#
+# Requirements addressed:
+# Technical Specification/System Architecture/2.4 Cross-Cutting Concerns - System Monitoring
+# - Implements centralized log collection using Fluentd DaemonSet
+# - Ensures system observability by forwarding logs to Elasticsearch
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluentd-daemonset
+  namespace: task-management-system
+  labels:
+    app: fluentd
+    component: logging
+  annotations:
+    description: "Fluentd DaemonSet for collecting and forwarding logs to Elasticsearch"
+spec:
+  selector:
+    matchLabels:
+      app: fluentd
+      component: logging
+  template:
+    metadata:
+      labels:
+        app: fluentd
+        component: logging
+      annotations:
+        # Ensure pods are restarted when config changes
+        checksum/config: ${CONFIG_CHECKSUM}
+    spec:
+      # Ensure Fluentd runs on all nodes including master nodes
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        effect: NoSchedule
+      containers:
+      - name: fluentd
+        image: fluent/fluentd:v1.14
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+        ports:
+        - containerPort: 24224
+          protocol: TCP
+          name: forward
+        volumeMounts:
+        - name: config-volume
+          mountPath: /fluentd/etc
+        - name: varlog
+          mountPath: /var/log
+          readOnly: true
+        env:
+        - name: FLUENT_ELASTICSEARCH_HOST
+          value: "elasticsearch"  # References the Elasticsearch service
+        - name: FLUENT_ELASTICSEARCH_PORT
+          value: "9200"
+        - name: FLUENTD_SYSTEMD_CONF
+          value: "disable"
+        livenessProbe:
+          tcpSocket:
+            port: forward
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          tcpSocket:
+            port: forward
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        securityContext:
+          runAsUser: 0  # Required to read system logs
+          privileged: true  # Required for log access
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: config-volume
+        configMap:
+          name: fluentd-config
+          items:
+          - key: fluent.conf
+            path: fluent.conf
+      - name: varlog
+        hostPath:
+          path: /var/log
+      serviceAccount: fluentd  # Ensure this service account exists with proper permissions
+      # Ensure Fluentd pods are distributed across nodes
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1  # Ensure log collection continues during updates
