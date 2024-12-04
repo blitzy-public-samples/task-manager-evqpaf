@@ -1,0 +1,40 @@
+{
+  "name": "notification-service",
+  "version": "1.0.0",
+  "description": "Handles email and WebSocket-based notifications for the Task Management System.",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "jest --config jest.config.js",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "nodemailer": "^6.9.3",
+    "ioredis": "^5.3.1",
+    "ws": "^8.13.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "nodemon": "^2.0.22",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/organization/task-management-system.git"
+  },
+  "keywords": [
+    "notification",
+    "email",
+    "websocket",
+    "real-time",
+    "microservice"
+  ],
+  "author": "",
+  "license": "UNLICENSED"
+}
