@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 
+    Human Tasks:
+    - Verify that all meta tags are properly configured for SEO
+    - Ensure proper Content Security Policy (CSP) headers are set on the server
+    - Validate favicon and manifest files are properly configured
+    - Test viewport settings across different mobile devices
+    -->
+
+    <!-- Character encoding -->
+    <meta charset="UTF-8">
+
+    <!-- Requirement: Responsive Design -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+    <!-- Primary Meta Tags -->
+    <title>Task Management System</title>
+    <meta name="description" content="Task Management System - Streamline your tasks and projects.">
+    <meta name="theme-color" content="#2196F3">
+
+    <!-- Requirement: Accessibility -->
+    <meta name="application-name" content="Task Management System">
+    <meta name="apple-mobile-web-app-title" content="Task Management System">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Task Management System">
+    <meta property="og:description" content="Task Management System - Streamline your tasks and projects.">
+    <meta property="og:site_name" content="Task Management System">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Task Management System">
+    <meta name="twitter:description" content="Task Management System - Streamline your tasks and projects.">
+
+    <!-- Preload critical assets -->
+    <link rel="preload" href="/src/web/src/styles/global.css" as="style">
+    <link rel="preload" href="/src/web/main.tsx" as="script" type="module">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/src/web/src/styles/global.css">
+
+    <!-- Requirement: Frontend Build Configuration -->
+    <!-- Vite entry point for React application -->
+    <script type="module" src="/src/web/main.tsx"></script>
+
+    <!-- Preconnect to external resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Font loading - Roboto (referenced in FONT_FAMILY constant) -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Requirement: Accessibility -->
+    <!-- Root element for React application with ARIA role -->
+    <div id="root" role="main" aria-label="Task Management System Application"></div>
+
+    <!-- Fallback for JavaScript disabled environments -->
+    <noscript>
+        <div style="padding: 20px; text-align: center;">
+            <h1>JavaScript Required</h1>
+            <p>Please enable JavaScript to use the Task Management System.</p>
+        </div>
+    </noscript>
+</body>
+</html>
