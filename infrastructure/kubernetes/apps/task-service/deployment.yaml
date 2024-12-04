@@ -1,0 +1,110 @@
+# Kubernetes version: 1.26+
+# Purpose: Defines the Kubernetes Deployment resource for the Task Service
+#
+# Requirements addressed:
+# - Technical Specification/System Architecture/2.2 Component Details
+#   Ensures Task Service deployment with appropriate configuration including:
+#   - High availability with 3 replicas
+#   - Resource quotas and limits
+#   - Health monitoring via probes
+#   - Configuration injection via ConfigMap and Secrets
+#
+# Human Tasks:
+# 1. Update the image tag from 'latest' to a specific version for production
+# 2. Verify resource limits match production requirements
+# 3. Ensure ConfigMap and Secrets are deployed before this deployment
+# 4. Configure horizontal pod autoscaling if needed
+# 5. Review and adjust probe settings based on application startup time
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-service
+  namespace: task-management-system
+  labels:
+    app: task-management
+    component: task-service
+  annotations:
+    description: "Task Service deployment for handling task-related operations"
+    app.kubernetes.io/name: task-service
+    app.kubernetes.io/part-of: task-management-system
+    app.kubernetes.io/managed-by: kubernetes
+
+spec:
+  # Maintain 3 replicas for high availability
+  replicas: 3
+  
+  # Pod selection criteria
+  selector:
+    matchLabels:
+      app: task-management
+      component: task-service
+  
+  # Pod template specification
+  template:
+    metadata:
+      labels:
+        app: task-management
+        component: task-service
+    spec:
+      containers:
+      - name: task-service
+        image: task-service:latest  # Update to specific version for production
+        imagePullPolicy: IfNotPresent
+        
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+        
+        # Load configuration from ConfigMap and Secrets
+        envFrom:
+        - configMapRef:
+            name: task-management-config
+        - secretRef:
+            name: task-management-secrets
+        
+        # Resource requirements and limits
+        resources:
+          requests:
+            cpu: "500m"    # 0.5 CPU core
+            memory: "512Mi"
+          limits:
+            cpu: "1"       # 1 CPU core
+            memory: "1Gi"
+        
+        # Health monitoring
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        
+        # Graceful shutdown configuration
+        terminationGracePeriodSeconds: 30
+        
+        # Security context for the container
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          readOnlyRootFilesystem: true
+      
+      # Pod-level security context
+      securityContext:
+        fsGroup: 1000
+      
+      # Restart policy
+      restartPolicy: Always
