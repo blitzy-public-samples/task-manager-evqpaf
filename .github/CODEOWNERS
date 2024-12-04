@@ -1,0 +1,81 @@
+# This file defines code ownership rules for automatic review assignments
+# Format: <file_pattern> <owner1> <owner2> ...
+# Owners can be GitHub usernames or team names (prefixed with @)
+
+# Default owners for everything in the repo (unless overridden below)
+* @global-owner1 @global-owner2
+
+# Backend service ownership
+/src/backend/ @backend-team
+/src/services/ @backend-team
+/src/api/ @backend-team
+
+# Frontend ownership
+/src/web/ @frontend-team
+/src/ui/ @frontend-team
+/src/components/ @frontend-team
+
+# Infrastructure and deployment
+/infrastructure/ @devops-team
+/deployment/ @devops-team
+/.github/workflows/ @devops-team
+/docker/ @devops-team
+/kubernetes/ @devops-team
+
+# Database related files
+/src/database/ @backend-team @database-team
+/migrations/ @database-team
+
+# Configuration files
+*.json @devops-team
+*.yaml @devops-team
+*.yml @devops-team
+
+# Documentation
+/docs/ @tech-writers @project-leads
+*.md @tech-writers @project-leads
+
+# Security related files
+/security/ @security-team
+/src/auth/ @security-team
+
+# Test files
+/tests/ @qa-team
+/cypress/ @qa-team
+/jest/ @qa-team
+
+# Package management
+package.json @devops-team @backend-team
+package-lock.json @devops-team @backend-team
+yarn.lock @devops-team @backend-team
+
+# Build configuration
+webpack.config.js @frontend-team @devops-team
+tsconfig.json @frontend-team @backend-team
+.eslintrc* @frontend-team @backend-team
+.prettierrc* @frontend-team @backend-team
+
+# CI/CD
+/.github/ @devops-team
+/scripts/ @devops-team
+
+# Monitoring and logging
+/monitoring/ @devops-team
+/logging/ @devops-team
+
+# API documentation
+/api-docs/ @backend-team @tech-writers
+/swagger/ @backend-team @tech-writers
+
+# Assets and static files
+/public/ @frontend-team
+/assets/ @frontend-team
+/static/ @frontend-team
+
+# Shared utilities and common code
+/src/utils/ @backend-team @frontend-team
+/src/common/ @backend-team @frontend-team
+/src/shared/ @backend-team @frontend-team
+
+# Environment configuration
+.env* @devops-team @security-team
