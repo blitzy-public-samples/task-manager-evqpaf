@@ -1,0 +1,50 @@
+# Kubernetes version: 1.26+
+# Purpose: Defines the Kubernetes Service resource for the Task Service
+# Requirements addressed:
+# - Technical Specification/System Architecture/Deployment Architecture
+#   Ensures the Task Service is accessible within the Kubernetes cluster
+# - Technical Specification/System Architecture/2.2 Component Details
+#   Provides service discovery and load balancing for the Task Service
+
+# Human Tasks:
+# 1. Verify that port 3000 matches the Task Service container port configuration
+# 2. Consider enabling external access if required by changing service type to LoadBalancer or NodePort
+# 3. Ensure network policies allow traffic to this service from intended clients
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: task-service
+  namespace: task-management-system
+  labels:
+    app: task-management
+    service: task-service
+  annotations:
+    description: "Task Service internal endpoint for task management operations"
+    service.kubernetes.io/topology-aware-hints: "auto"  # Enable topology-aware routing if available
+    prometheus.io/scrape: "true"  # Enable metrics scraping
+    prometheus.io/port: "3000"    # Metrics port
+spec:
+  # Using ClusterIP for internal access within the cluster
+  # This aligns with the service discovery requirement and internal communication pattern
+  type: ClusterIP
+  
+  # Selector matches the labels on the Task Service pods
+  selector:
+    app: task-management
+    service: task-service
+  
+  ports:
+    - name: http  # Named port for better service discovery
+      protocol: TCP
+      port: 80        # Service port
+      targetPort: 3000 # Container port where the Task Service listens
+  
+  # Enable session affinity for better performance with stateful connections
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800  # 3 hour timeout
+  
+  # Internal traffic policy for better performance
+  internalTrafficPolicy: Cluster
