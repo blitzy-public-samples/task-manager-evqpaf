@@ -1,0 +1,302 @@
+openapi: 3.0.0
+info:
+  title: Task Management System API
+  description: |
+    RESTful API for the Task Management System that provides endpoints for user authentication,
+    task management, and system administration.
+  version: 1.0.0
+  contact:
+    name: Development Team
+    email: dev-team@example.com
+
+# Requirement Addressed: Authentication and Authorization
+# Location: Technical Specification/System Design/Security Architecture
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Development server
+  - url: https://api.taskmanagement.com/v1
+    description: Production server
+
+# Requirement Addressed: Authentication and Authorization
+# Location: Technical Specification/System Design/Security Architecture
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from the /auth/login endpoint
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        statusCode:
+          type: integer
+          example: 400
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: VALIDATION_ERROR
+            message:
+              type: string
+              example: Request validation failed
+            details:
+              type: object
+              description: Additional error context
+        timestamp:
+          type: string
+          format: date-time
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          example: "********"
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        statusCode:
+          type: integer
+          example: 200
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                  example: "123e4567-e89b-12d3-a456-426614174000"
+                email:
+                  type: string
+                  example: "user@example.com"
+                role:
+                  type: string
+                  example: "user"
+        timestamp:
+          type: string
+          format: date-time
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [pending, in_progress, completed]
+        dueDate:
+          type: string
+          format: date-time
+        assignedTo:
+          type: string
+          format: uuid
+        createdBy:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+# Requirement Addressed: Error Handling Standards
+# Location: Technical Specification/System Design/Error Handling Standards
+paths:
+  /auth/login:
+    post:
+      summary: Authenticate user and get JWT token
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tasks:
+    get:
+      summary: Retrieve list of tasks
+      tags:
+        - Tasks
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Number of items per page
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, in_progress, completed]
+          description: Filter tasks by status
+      responses:
+        '200':
+          description: List of tasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  statusCode:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Task'
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      pageSize:
+                        type: integer
+                  timestamp:
+                    type: string
+                    format: date-time
+        '401':
+          description: Unauthorized access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Create a new task
+      tags:
+        - Tasks
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - description
+              properties:
+                title:
+                  type: string
+                  example: "Complete project documentation"
+                description:
+                  type: string
+                  example: "Write comprehensive documentation for the API"
+                dueDate:
+                  type: string
+                  format: date-time
+                assignedTo:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  statusCode:
+                    type: integer
+                    example: 201
+                  data:
+                    $ref: '#/components/schemas/Task'
+                  timestamp:
+                    type: string
+                    format: date-time
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+# Requirement Addressed: Error Handling Standards
+# Location: Technical Specification/System Design/Error Handling Standards
+tags:
+  - name: Authentication
+    description: Authentication related operations
+  - name: Tasks
+    description: Task management operations
+
+# Requirement Addressed: Authentication and Authorization
+# Location: Technical Specification/System Design/Security Architecture
+security:
+  - bearerAuth: []
