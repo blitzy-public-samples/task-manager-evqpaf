@@ -1,0 +1,36 @@
+# Kubernetes version: 1.26+
+#
+# Requirements addressed:
+# Technical Specification/System Architecture/2.4 Cross-Cutting Concerns - System Monitoring
+# - Provides visualization and analysis of metrics collected by Prometheus using Grafana
+# - Enables internal cluster access to Grafana dashboards for monitoring system metrics
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: task-management-system  # References namespace from namespace.yaml
+  labels:
+    app: grafana
+    component: monitoring
+  annotations:
+    description: "Service for exposing Grafana metrics visualization dashboard"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3000"
+
+spec:
+  # Selector matches labels from Grafana deployment pods
+  selector:
+    app: grafana
+    component: monitoring
+
+  # Service port configuration
+  ports:
+    - name: http
+      protocol: TCP
+      port: 3000        # Port the service listens on
+      targetPort: 3000  # Port on the Grafana pod to forward to
+
+  # ClusterIP type makes the service only accessible within the cluster
+  # External access should be configured through an Ingress resource
+  type: ClusterIP
