@@ -1,0 +1,112 @@
+# Kubernetes version: 1.26+
+#
+# Purpose: Defines the Kubernetes Deployment resource for Grafana monitoring visualization
+#
+# Requirements addressed:
+# - Technical Specification/System Architecture/2.4 Cross-Cutting Concerns
+#   Provides visualization and analysis of system metrics using Grafana
+#
+# Human Tasks Required:
+# 1. Verify that the task-management-secrets Secret exists with grafana-admin-user and grafana-admin-password keys
+# 2. Ensure grafana-config ConfigMap is created with proper Grafana configuration
+# 3. Review and adjust resource limits based on actual monitoring requirements
+# 4. Configure network policies to allow Grafana to access Prometheus service
+# 5. Set up proper RBAC permissions for Grafana service account
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana-deployment
+  namespace: task-management-system  # References namespace from namespace.yaml
+  labels:
+    app: grafana
+    component: monitoring
+  annotations:
+    description: "Grafana monitoring visualization deployment"
+spec:
+  # High availability configuration with 2 replicas
+  replicas: 2
+  selector:
+    matchLabels:
+      app: grafana
+      component: monitoring
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: grafana
+        component: monitoring
+    spec:
+      # Security context for the pod
+      securityContext:
+        fsGroup: 472  # grafana group
+        runAsUser: 472  # grafana user
+        runAsNonRoot: true
+      containers:
+        - name: grafana
+          image: grafana/grafana:9.5.2  # Specific version for stability
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          # Environment variables from secrets
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: task-management-secrets
+                  key: grafana-admin-user
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: task-management-secrets
+                  key: grafana-admin-password
+          # Resource limits as specified in the JSON spec
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          # Readiness probe to verify Grafana is ready to handle requests
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 30
+            timeoutSeconds: 10
+          # Liveness probe to verify Grafana is healthy
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 60
+            timeoutSeconds: 10
+          volumeMounts:
+            - name: grafana-config
+              mountPath: /etc/grafana
+      volumes:
+        - name: grafana-config
+          configMap:
+            name: grafana-config
+      # Ensure pods are distributed across nodes
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - grafana
+                topologyKey: kubernetes.io/hostname
+      # Terminate gracefully
+      terminationGracePeriodSeconds: 60
