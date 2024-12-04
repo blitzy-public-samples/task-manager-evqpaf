@@ -1,0 +1,31 @@
+# Kubernetes version: 1.26+
+#
+# Requirements addressed:
+# Technical Specification/System Architecture/2.4 Cross-Cutting Concerns - System Monitoring
+# - Provides a Service for exposing Kibana, enabling users to visualize logs and metrics 
+#   aggregated by Elasticsearch
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana
+  namespace: task-management-system
+  labels:
+    app: kibana
+    component: monitoring
+  annotations:
+    description: "Service for exposing Kibana dashboard for log visualization and monitoring"
+spec:
+  # Using ClusterIP as the service type for internal access
+  # External access should be configured through an Ingress resource
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 5601           # The port exposed by the service
+      targetPort: 5601     # The port the Kibana container is listening on
+      protocol: TCP
+  # Selector matches the labels defined in the Kibana deployment
+  selector:
+    app: kibana
+    component: monitoring
