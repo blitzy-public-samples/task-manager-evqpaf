@@ -1,0 +1,120 @@
+# Kubernetes version: 1.26+
+#
+# Purpose: Defines the Prometheus deployment configuration for the Task Management System's monitoring stack
+#
+# Requirements addressed:
+# - Technical Specification/System Architecture/2.4 Cross-Cutting Concerns
+#   Implements system monitoring and alerting using Prometheus for performance and health monitoring
+#
+# Human Tasks Required:
+# 1. Verify that the prometheus-config-local ConfigMap exists and contains valid Prometheus configuration
+# 2. Ensure prometheus-pvc (PersistentVolumeClaim) is created before deploying
+# 3. Review and adjust resource limits based on actual monitoring requirements
+# 4. Configure network policies to allow Prometheus to scrape metrics from target services
+# 5. Set up proper RBAC permissions for Prometheus service account
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-deployment
+  namespace: task-management-system  # References namespace from namespace.yaml
+  labels:
+    app: prometheus
+    component: monitoring
+  annotations:
+    description: "Prometheus monitoring system deployment"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+spec:
+  # High availability configuration with 2 replicas
+  replicas: 2
+  selector:
+    matchLabels:
+      app: prometheus
+      component: monitoring
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: prometheus
+        component: monitoring
+    spec:
+      # Security context for the pod
+      securityContext:
+        fsGroup: 65534  # nobody user
+        runAsNonRoot: true
+        runAsUser: 65534
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.41.0  # Specific version for stability
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.path=/prometheus"
+            - "--storage.tsdb.retention.time=15d"
+            - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+            - "--web.console.templates=/usr/share/prometheus/consoles"
+          ports:
+            - containerPort: 9090
+              protocol: TCP
+          # Readiness probe to verify Prometheus is ready to handle requests
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 9090
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+          # Liveness probe to verify Prometheus is healthy
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 9090
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+          # Resource limits as specified in the JSON spec
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          volumeMounts:
+            - name: prometheus-config
+              mountPath: /etc/prometheus
+            - name: prometheus-data
+              mountPath: /prometheus
+          # Environment variables for configuration
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+      volumes:
+        # Configuration volume using ConfigMap
+        - name: prometheus-config
+          configMap:
+            name: prometheus-config-local
+        # Persistent storage for metrics data
+        - name: prometheus-data
+          persistentVolumeClaim:
+            claimName: prometheus-pvc
+      # Ensure pods are distributed across nodes
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - prometheus
+                topologyKey: kubernetes.io/hostname
+      # Terminate gracefully
+      terminationGracePeriodSeconds: 300
