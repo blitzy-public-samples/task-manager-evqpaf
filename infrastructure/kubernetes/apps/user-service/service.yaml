@@ -1,0 +1,39 @@
+# Kubernetes version: 1.26+
+# Purpose: Defines the Kubernetes Service resource for exposing the User Service within the cluster
+#
+# Requirements addressed:
+# 1. Service Exposure (Technical Specification/System Architecture/2.3.2 Communication Patterns)
+#    - Ensures the User Service is accessible within the Kubernetes cluster
+#    - Provides stable network endpoint for service discovery
+#
+# 2. Traffic Routing (Technical Specification/System Architecture/Deployment Architecture)
+#    - Routes traffic to the appropriate User Service pods based on label selectors
+#    - Ensures high availability through load balancing across multiple pods
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: task-management-system
+  labels:
+    app: task-management
+    component: user-service
+  annotations:
+    description: "User Service endpoint for task management system"
+    maintainer: "platform-team"
+
+spec:
+  # Use ClusterIP for internal cluster communication
+  type: ClusterIP
+  
+  # Selector to identify target pods
+  selector:
+    app: task-management
+    component: user-service
+  
+  # Port configuration
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80  # Service port
+      targetPort: 3000  # Container port (matches Dockerfile EXPOSE)
