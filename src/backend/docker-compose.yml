@@ -1,0 +1,114 @@
+# Requirement Addressed: Containerized Deployment
+# Location: Technical Specification/System Design/Deployment Architecture
+# Description: Ensures all backend services are containerized and orchestrated using Docker Compose
+# for local development and testing.
+
+version: '3.8'
+
+services:
+  # API Gateway Service
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+    networks:
+      - task_management_network
+    depends_on:
+      - user-service
+      - project-service
+      - task-service
+      - notification-service
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+    networks:
+      - task_management_network
+    depends_on:
+      - redis
+
+  # Project Service
+  project-service:
+    build:
+      context: ./project-service
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+    networks:
+      - task_management_network
+    depends_on:
+      - postgres
+
+  # Task Service
+  task-service:
+    build:
+      context: ./task-service
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=development
+      - PORT=3003
+    networks:
+      - task_management_network
+    depends_on:
+      - postgres
+
+  # User Service
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=development
+      - PORT=3004
+    networks:
+      - task_management_network
+    depends_on:
+      - postgres
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=example_user
+      - POSTGRES_PASSWORD=example_password
+      - POSTGRES_DB=example_database
+    volumes:
+      - task_management_data:/var/lib/postgresql/data
+    networks:
+      - task_management_network
+
+  # Redis Cache
+  redis:
+    image: redis:7.0
+    ports:
+      - "6379:6379"
+    networks:
+      - task_management_network
+
+networks:
+  task_management_network:
+    driver: bridge
+
+volumes:
+  task_management_data:
