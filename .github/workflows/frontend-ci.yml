@@ -1,0 +1,99 @@
+# Frontend CI Pipeline
+# Requirements Addressed: Frontend CI/CD Pipeline (Technical Specification/4.5 Development & Deployment/Deployment Pipeline)
+# Automates the continuous integration process for the frontend application, including linting, testing, and building.
+
+name: Frontend CI
+
+# Trigger the workflow on push and pull request events for the main branch
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/web/**'
+      - '.github/workflows/frontend-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/web/**'
+      - '.github/workflows/frontend-ci.yml'
+
+# Set default working directory for all jobs
+defaults:
+  run:
+    working-directory: src/web
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout repository code
+      # actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # Setup Node.js environment
+      # actions/setup-node@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: src/web/package-lock.json
+
+      # Install dependencies with caching
+      # actions/cache@v3
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # Install npm dependencies
+      - name: Install Dependencies
+        run: npm ci
+
+      # Run ESLint
+      - name: Run Linting
+        run: npm run lint
+        env:
+          CI: true
+
+      # Run Jest tests
+      - name: Run Tests
+        run: npm run test
+        env:
+          CI: true
+          NODE_ENV: test
+
+      # Build the application
+      - name: Build Application
+        run: npm run build
+        env:
+          CI: true
+          NODE_ENV: production
+
+      # Upload build artifacts
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: src/web/dist
+          retention-days: 7
+
+      # Cache build output
+      - name: Cache Build Output
+        uses: actions/cache@v3
+        with:
+          path: src/web/dist
+          key: ${{ runner.os }}-build-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-build-
+
+    # Environment variables available to all steps in the job
+    env:
+      VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+      VITE_AUTH_ENDPOINT: ${{ secrets.VITE_AUTH_ENDPOINT }}
