@@ -1,0 +1,63 @@
+{
+  // Requirement: TypeScript Configuration (Technical Specification/4.1 Programming Languages)
+  // Defines consistent TypeScript compiler settings across all backend services
+  "compilerOptions": {
+    // Target ECMAScript 2022 for modern Node.js compatibility
+    "target": "ES2022",
+    
+    // Use CommonJS modules for better Node.js compatibility
+    "module": "CommonJS",
+    
+    // Enable strict type checking for improved code quality
+    "strict": true,
+    
+    // Allow default imports from modules with no default export
+    "esModuleInterop": true,
+    
+    // Skip type checking of declaration files for better build performance
+    "skipLibCheck": true,
+    
+    // Ensure consistent casing in file names across different operating systems
+    "forceConsistentCasingInFileNames": true,
+    
+    // Output directory for compiled JavaScript files
+    "outDir": "./dist",
+    
+    // Source TypeScript files directory
+    "rootDir": "./src",
+    
+    // Base URL for module resolution
+    "baseUrl": "./",
+    
+    // Path aliases for cleaner imports
+    "paths": {
+      "@shared/*": ["shared/*"]
+    },
+
+    // Additional recommended options for production environments
+    "removeComments": true,
+    "sourceMap": true,
+    "declaration": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true
+  },
+
+  // Requirement: Code Quality and Maintainability (Technical Specification/4.5 Development & Deployment/Development Tools)
+  // Include patterns for TypeScript files
+  "include": [
+    "src/**/*"
+  ],
+
+  // Exclude patterns for better build performance and cleaner compilation
+  "exclude": [
+    "node_modules",
+    "dist",
+    "tests"
+  ]
+}
