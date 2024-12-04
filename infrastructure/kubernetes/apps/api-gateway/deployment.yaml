@@ -1,0 +1,115 @@
+# Kubernetes version: 1.26+
+# Purpose: Defines the Kubernetes Deployment resource for the API Gateway
+#
+# Requirements addressed:
+# 1. API Gateway Deployment (Technical Specification/System Architecture/2.3.2 Communication Patterns)
+#    - Ensures the API Gateway is deployed and managed within the Kubernetes cluster
+#    - Provides scalability and fault tolerance
+#
+# 2. Dynamic Scaling for API Gateway (Technical Specification/System Design/Deployment Architecture)
+#    - Supports dynamic scaling through replica configuration
+#    - Implements resource limits and requests for efficient scaling
+#
+# Human Tasks:
+# 1. Verify that the task-management-config ConfigMap exists and contains required configuration
+# 2. Ensure task-management-secrets Secret is properly configured with required credentials
+# 3. Update the image tag based on your CI/CD pipeline configuration
+# 4. Review and adjust resource limits based on performance testing results
+# 5. Configure horizontal pod autoscaling if needed for production workloads
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: task-management-system
+  labels:
+    app: api-gateway
+    tier: backend
+  annotations:
+    description: "API Gateway deployment for task management system"
+    maintainer: "platform-team"
+spec:
+  # Configure multiple replicas for high availability and scalability
+  replicas: 3
+  
+  # Pod selector configuration
+  selector:
+    matchLabels:
+      app: api-gateway
+  
+  # Template for pod creation
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: taskmanagement/api-gateway:latest
+          imagePullPolicy: Always
+          
+          # Container port configuration
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          
+          # Environment configuration from ConfigMap and Secrets
+          envFrom:
+            - configMapRef:
+                name: task-management-config
+            - secretRef:
+                name: task-management-secrets
+          
+          # Resource limits and requests for efficient scaling
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          
+          # Liveness probe configuration
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          # Readiness probe configuration
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          
+          # Security context
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+          
+          # Volume mounts for temporary storage
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      
+      # Volumes configuration
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      
+      # Pod security configuration
+      securityContext:
+        fsGroup: 1000
+      
+      # Termination grace period
+      terminationGracePeriodSeconds: 30
