@@ -1,0 +1,132 @@
+# Kubernetes version: 1.26+
+# Purpose: Defines the Kubernetes Deployment resource for the web application
+#
+# Requirements addressed:
+# 1. Web Application Deployment (Technical Specification/System Architecture/2.3.2 Communication Patterns)
+#    - Ensures the web application is deployed and managed within the Kubernetes cluster
+# 2. Scalability and Availability (Technical Specification/System Architecture/2.2 Component Details)
+#    - Provides scalability and high availability through Kubernetes Deployment with multiple replicas
+#
+# Human Tasks:
+# 1. Verify that the container image tag matches your CI/CD pipeline configuration
+# 2. Ensure resource limits are appropriate for your cluster capacity
+# 3. Configure node affinity/anti-affinity rules if needed for specific node placement
+# 4. Review security context settings for production deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-deployment
+  namespace: task-management-system
+  labels:
+    app: task-management
+    component: web
+  annotations:
+    description: "Web application deployment for Task Management System"
+    kubernetes.io/change-cause: "Initial deployment of web application"
+spec:
+  # Maintain 3 replicas for high availability
+  replicas: 3
+  
+  # Pod selector matching labels
+  selector:
+    matchLabels:
+      app: task-management
+      component: web
+  
+  # Deployment strategy
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  
+  # Pod template
+  template:
+    metadata:
+      labels:
+        app: task-management
+        component: web
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Security context for the pod
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 1000
+      
+      # Container specifications
+      containers:
+        - name: web-container
+          image: web-app:latest
+          imagePullPolicy: Always
+          
+          # Container ports
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          
+          # Environment variables from ConfigMap and Secrets
+          envFrom:
+            - configMapRef:
+                name: task-management-config
+            - secretRef:
+                name: task-management-secrets
+          
+          # Resource requests and limits
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
+          
+          # Liveness probe
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          
+          # Readiness probe
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          
+          # Security context for the container
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          
+          # Volume mounts for temporary storage
+          volumeMounts:
+            - name: tmp-volume
+              mountPath: /tmp
+              readOnly: false
+      
+      # Volumes definition
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
+      
+      # Pod termination grace period
+      terminationGracePeriodSeconds: 30
+      
+      # Image pull secrets if using private registry
+      imagePullSecrets:
+        - name: task-management-secrets
