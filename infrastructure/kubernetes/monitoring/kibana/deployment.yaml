@@ -1,0 +1,102 @@
+# Kubernetes version: 1.26+
+#
+# Human Tasks Required:
+# 1. Verify Kibana version (8.0.0) compatibility with your Elasticsearch deployment
+# 2. Review and adjust resource limits based on user load and data volume
+# 3. Ensure proper network policies are in place for Kibana-Elasticsearch communication
+# 4. Configure authentication and access control for Kibana dashboard
+#
+# Requirements addressed:
+# Technical Specification/System Architecture/2.4 Cross-Cutting Concerns - System Monitoring
+# - Provides a user interface for visualizing logs and metrics aggregated by Elasticsearch
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+  namespace: task-management-system
+  labels:
+    app: kibana
+    component: monitoring
+  annotations:
+    description: "Kibana deployment for visualizing Elasticsearch data"
+spec:
+  # Single replica as Kibana is stateless and can be scaled horizontally if needed
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kibana
+      component: monitoring
+  template:
+    metadata:
+      labels:
+        app: kibana
+        component: monitoring
+    spec:
+      containers:
+        - name: kibana
+          image: docker.elastic.co/kibana/kibana:8.0.0
+          ports:
+            - containerPort: 5601
+              name: http
+              protocol: TCP
+          env:
+            - name: ELASTICSEARCH_HOSTS
+              # Points to the Elasticsearch service using Kubernetes DNS
+              value: "http://elasticsearch.task-management-system.svc.cluster.local:9200"
+            - name: ELASTICSEARCH_SERVICEACCOUNTTOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: task-management-secrets
+                  key: KIBANA_ES_TOKEN
+            # Enable monitoring of Kibana itself
+            - name: MONITORING_ENABLED
+              value: "true"
+            # Set server name for better identification
+            - name: SERVER_NAME
+              value: "task-management-kibana"
+            # Configure logging level
+            - name: LOGGING_VERBOSE
+              value: "false"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+          readinessProbe:
+            httpGet:
+              path: /api/status
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/status
+              port: http
+            initialDelaySeconds: 120
+            periodSeconds: 20
+            timeoutSeconds: 5
+      # Ensure Kibana pods are distributed across nodes
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - kibana
+                topologyKey: kubernetes.io/hostname
+      # Add security context for non-root user
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsNonRoot: true
+      # Terminate gracefully
+      terminationGracePeriodSeconds: 30
