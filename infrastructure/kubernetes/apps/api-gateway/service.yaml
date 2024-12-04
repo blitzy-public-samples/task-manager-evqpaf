@@ -1,0 +1,57 @@
+# Kubernetes version: 1.26+
+# Purpose: Defines the Kubernetes Service resource for exposing the API Gateway
+#
+# Requirement Addressed: Service Exposure
+# Location: Technical Specification/System Architecture/Deployment Architecture
+# Description: Exposes the API Gateway to internal and external clients, enabling 
+# communication with other services and external systems.
+#
+# Human Tasks:
+# 1. Verify that port 3000 matches the container port configured in the API Gateway deployment
+# 2. Ensure network policies allow traffic to this service from authorized sources
+# 3. Configure monitoring and metrics collection for the service
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway-service
+  namespace: task-management-system
+  labels:
+    app: api-gateway
+    component: gateway
+  annotations:
+    description: "API Gateway service endpoint for task management system"
+    service.kubernetes.io/topology-aware-hints: "auto"  # Enable topology-aware routing
+    prometheus.io/scrape: "true"  # Enable Prometheus metrics scraping
+    prometheus.io/port: "3000"
+    prometheus.io/path: "/metrics"
+
+spec:
+  # Using ClusterIP for internal access, as external access is handled by Ingress
+  type: ClusterIP
+  
+  # Selector to identify API Gateway pods
+  selector:
+    app: api-gateway
+  
+  # Port configuration
+  ports:
+    - name: http  # Named port for better service discovery
+      protocol: TCP
+      port: 80        # Service port
+      targetPort: 3000 # Container port where API Gateway listens
+  
+  # Session affinity configuration for better performance
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800  # 3 hour timeout
+  
+  # Internal traffic policy for better performance
+  internalTrafficPolicy: Cluster
+  
+  # Support both IPv4 and IPv6 if available
+  ipFamilyPolicy: PreferDualStack
+  ipFamilies:
+    - IPv4
+    - IPv6
