@@ -1,0 +1,64 @@
+{
+  "compilerOptions": {
+    // Target ES2022 for modern Node.js compatibility
+    "target": "ES2022",
+    
+    // Use CommonJS modules for Node.js compatibility
+    "module": "CommonJS",
+    
+    // Enable strict type checking
+    "strict": true,
+    
+    // Enable ES module interop for cleaner imports
+    "esModuleInterop": true,
+    
+    // Skip type checking of declaration files for better performance
+    "skipLibCheck": true,
+    
+    // Ensure consistent casing in file names
+    "forceConsistentCasingInFileNames": true,
+    
+    // Output directory for compiled files
+    "outDir": "./dist",
+    
+    // Source directory for TypeScript files
+    "rootDir": "./src",
+    
+    // Base URL for module resolution
+    "baseUrl": "./",
+    
+    // Path aliases for cleaner imports
+    "paths": {
+      "@config/*": ["src/config/*"],
+      "@middleware/*": ["src/middleware/*"],
+      "@routes/*": ["src/routes/*"],
+      "@utils/*": ["src/utils/*"]
+    },
+
+    // Additional compiler options for production-grade code
+    "declaration": true,
+    "sourceMap": true,
+    "removeComments": true,
+    "noEmitOnError": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo"
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ]
+}
