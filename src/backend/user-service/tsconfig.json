@@ -1,0 +1,54 @@
+{
+  // Requirement: TypeScript Configuration (Technical Specification/4.1 Programming Languages)
+  // Extends the base TypeScript configuration while adding User Service specific settings
+  "extends": "../../tsconfig.json",
+
+  "compilerOptions": {
+    // Target ECMAScript 2022 for modern Node.js compatibility
+    "target": "ES2022",
+    
+    // Use CommonJS modules for better Node.js compatibility
+    "module": "CommonJS",
+    
+    // Enable strict type checking for improved code quality
+    "strict": true,
+    
+    // Allow default imports from modules with no default export
+    "esModuleInterop": true,
+    
+    // Skip type checking of declaration files for better build performance
+    "skipLibCheck": true,
+    
+    // Ensure consistent casing in file names across different operating systems
+    "forceConsistentCasingInFileNames": true,
+    
+    // Output directory for compiled JavaScript files
+    "outDir": "./dist",
+    
+    // Source TypeScript files directory
+    "rootDir": "./src",
+    
+    // Base URL for module resolution
+    "baseUrl": "./",
+    
+    // Requirement: Code Quality and Maintainability (Technical Specification/4.5 Development & Deployment/Development Tools)
+    // Path aliases specific to User Service for cleaner imports
+    "paths": {
+      "@models/*": ["src/models/*"],
+      "@services/*": ["src/services/*"],
+      "@config/*": ["src/config/*"]
+    }
+  },
+
+  // Include patterns for TypeScript files
+  "include": [
+    "src/**/*"
+  ],
+
+  // Exclude patterns for better build performance and cleaner compilation
+  "exclude": [
+    "node_modules",
+    "dist",
+    "tests"
+  ]
+}
