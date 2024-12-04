@@ -1,0 +1,32 @@
+# Node.js dependencies - installed during Docker build process
+node_modules/
+
+# Build artifacts
+dist/
+
+# Development and deployment scripts
+scripts/
+
+# Test files and directories
+tests/
+
+# Log files
+*.log
+
+# Environment files to prevent sensitive information leakage
+.env
+.env.example
+
+# macOS system files
+.DS_Store
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Git repository metadata
+.git
+
+# Requirement Addressed: Docker Image Optimization
+# Location: Technical Specification/4.5 Development & Deployment/Docker Configuration
+# Description: Excludes unnecessary files and directories from the Docker build context 
+# to optimize image size and build performance.
