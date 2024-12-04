@@ -1,0 +1,34 @@
+# Kubernetes version: 1.26+
+# Purpose: Defines ConfigMap for storing non-sensitive configuration data
+# Requirements addressed:
+# - Technical Specification/System Architecture/2.3.2 Communication Patterns
+#   Provides non-sensitive configuration data to services in the Kubernetes cluster
+# - Technical Specification/System Architecture/2.2 Component Details
+#   Ensures services have access to necessary configuration data without embedding in container images
+
+# Human Tasks:
+# 1. Verify that the service URLs match your cluster's DNS configuration
+# 2. Ensure the ConfigMap is created before deploying dependent services
+# 3. Update URLs if using different service names or custom domains
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: task-management-config
+  namespace: task-management-system
+  labels:
+    app: task-management
+  annotations:
+    description: "Configuration data for Task Management System services"
+    last-updated: "2024-01-01"
+    managed-by: "kubernetes"
+
+data:
+  # Internal service URLs using Kubernetes DNS pattern: <service-name>.<namespace>.svc.cluster.local
+  # Currently using shortened form for simplicity: <service-name>
+  API_GATEWAY_URL: "http://api-gateway-service"
+  NOTIFICATION_SERVICE_URL: "http://notification-service"
+  PROJECT_SERVICE_URL: "http://project-service"
+  TASK_SERVICE_URL: "http://task-service"
+  USER_SERVICE_URL: "http://user-service"
+  WEB_APP_URL: "http://web-service"
