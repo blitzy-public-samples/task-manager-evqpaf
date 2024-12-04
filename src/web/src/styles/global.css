@@ -1,0 +1,192 @@
+/**
+ * Global CSS Rules
+ * 
+ * Requirements Addressed:
+ * - Responsive Design (Technical Specification/3.1 User Interface Design/3.1.1 Design Specifications)
+ *   Ensures a consistent and responsive layout across different devices and screen sizes.
+ * - Accessibility (Technical Specification/3.1 User Interface Design/3.1.1 Design Specifications)
+ *   Provides WCAG 2.1 Level AA compliance with optimized styles for accessibility.
+ * - Theme Support (Technical Specification/3.1 User Interface Design/3.1.1 Design Specifications)
+ *   Provides system-default theme detection, manual theme toggle, persistent theme preference.
+ *
+ * Human Tasks:
+ * - Verify font loading and fallbacks across different operating systems
+ * - Test responsive breakpoints across various devices and screen sizes
+ * - Validate color contrast ratios meet WCAG 2.1 Level AA requirements
+ * - Ensure smooth theme transitions across different browsers
+ */
+
+/* Import CSS Variables */
+@import './variables.css';
+
+/* Reset box-sizing for all elements */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Base HTML and Body styles */
+html, body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  color: var(--text-color);
+  background-color: var(--background-color);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  transition: background-color var(--transition-normal) var(--transition-timing),
+              color var(--transition-normal) var(--transition-timing);
+}
+
+/* Focus styles for accessibility */
+:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Focus styles when using mouse */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Focus-visible styles for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Link styles */
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color var(--transition-fast) var(--transition-timing);
+}
+
+a:hover {
+  color: var(--secondary-color);
+  text-decoration: underline;
+}
+
+a:active {
+  color: var(--secondary-color);
+}
+
+/* Button styles */
+button {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background-color: transparent;
+  color: var(--text-color);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  transition: all var(--transition-fast) var(--transition-timing);
+}
+
+button:hover {
+  background-color: var(--primary-color);
+  color: var(--background-color);
+  border-color: var(--primary-color);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Selection styles */
+::selection {
+  background-color: var(--primary-color);
+  color: var(--background-color);
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: var(--border-radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color);
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High contrast mode adjustments */
+@media (prefers-contrast: high) {
+  a, button {
+    text-decoration: underline;
+  }
+  
+  :focus {
+    outline: 3px solid currentColor;
+  }
+}
+
+/* Print styles */
+@media print {
+  *, *::before, *::after {
+    background: transparent !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  a, a:visited {
+    text-decoration: underline;
+  }
+
+  a[href]::after {
+    content: " (" attr(href) ")";
+  }
+
+  abbr[title]::after {
+    content: " (" attr(title) ")";
+  }
+
+  pre, blockquote {
+    border: 1px solid #999;
+    page-break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tr, img {
+    page-break-inside: avoid;
+  }
+
+  p, h2, h3 {
+    orphans: 3;
+    widows: 3;
+  }
+
+  h2, h3 {
+    page-break-after: avoid;
+  }
+}
