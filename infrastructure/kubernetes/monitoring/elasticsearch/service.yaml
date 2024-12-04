@@ -1,0 +1,36 @@
+# Kubernetes version: 1.26+
+#
+# Requirements addressed:
+# 1. Technical Specification/System Architecture/2.4 Cross-Cutting Concerns - System Monitoring
+#    - Provides a Service for internal communication with Elasticsearch, enabling log aggregation
+#      and full-text search capabilities
+# 2. Technical Specification/System Architecture/2.2 Component Details - Data Persistence
+#    - Ensures Elasticsearch StatefulSet is accessible within the Kubernetes cluster for
+#      persistent data storage and retrieval
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+  namespace: task-management-system
+  labels:
+    app: elasticsearch
+    component: monitoring
+  annotations:
+    description: "Service for internal Elasticsearch cluster communication"
+spec:
+  # Headless service (no cluster IP) for StatefulSet DNS-based discovery
+  clusterIP: None
+  ports:
+    - name: http
+      port: 9200
+      targetPort: 9200
+      protocol: TCP
+    - name: transport
+      port: 9300
+      targetPort: 9300
+      protocol: TCP
+  selector:
+    app: elasticsearch
+    component: monitoring
