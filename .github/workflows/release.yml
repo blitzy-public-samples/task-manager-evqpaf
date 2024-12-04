@@ -1,0 +1,220 @@
+# Requirements Addressed:
+# - Automated CI/CD Pipeline (Technical Specification/4.5 Development & Deployment/Deployment Pipeline)
+#   Automates the release process, ensuring consistency and reliability in building, testing, and deploying the application.
+# - Infrastructure as Code (Technical Specification/2.2 Component Details/Data Storage Components)
+#   Integrates with Terraform to manage cloud infrastructure for the Task Management System.
+
+name: Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  RELEASE_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+  TF_VERSION: '1.5.0'
+  NODE_VERSION: '20.x'
+  DOCKER_COMPOSE_VERSION: '2.21.0'
+
+jobs:
+  prepare:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm install -g typescript
+
+  build:
+    name: Build Services
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Build Backend Services
+        run: |
+          chmod +x src/backend/scripts/build.sh
+          ./src/backend/scripts/build.sh all-services
+        env:
+          BUILD_ENV: ${{ env.RELEASE_ENV }}
+
+      - name: Cache Build Artifacts
+        uses: actions/cache@v3
+        with:
+          path: |
+            dist
+            node_modules
+          key: ${{ runner.os }}-build-${{ github.sha }}
+
+  test:
+    name: Run Tests
+    needs: build
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7.0
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Restore Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            dist
+            node_modules
+          key: ${{ runner.os }}-build-${{ github.sha }}
+
+      - name: Run Unit Tests
+        run: npm test
+
+      - name: Run Integration Tests
+        run: |
+          docker-compose -f src/backend/docker-compose.yml up -d
+          npm run test:integration
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+          DB_NAME: test_db
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+
+  deploy-infrastructure:
+    name: Deploy Infrastructure
+    needs: test
+    runs-on: ubuntu-latest
+    environment: ${{ env.RELEASE_ENV }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Initialize Terraform
+        run: |
+          cd infrastructure/terraform
+          terraform init
+          terraform workspace select ${{ env.RELEASE_ENV }} || terraform workspace new ${{ env.RELEASE_ENV }}
+
+      - name: Plan Terraform Changes
+        run: |
+          cd infrastructure/terraform
+          terraform plan -var="environment=${{ env.RELEASE_ENV }}" -out=tfplan
+
+      - name: Apply Terraform Changes
+        run: |
+          cd infrastructure/terraform
+          terraform apply -auto-approve tfplan
+
+  deploy-services:
+    name: Deploy Services
+    needs: deploy-infrastructure
+    runs-on: ubuntu-latest
+    environment: ${{ env.RELEASE_ENV }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Configure Kubernetes
+        uses: azure/k8s-set-context@v3
+        with:
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+
+      - name: Deploy Services
+        run: |
+          chmod +x src/backend/scripts/deploy.sh
+          ./src/backend/scripts/deploy.sh ${{ env.RELEASE_ENV }}
+
+      - name: Verify Deployment
+        run: |
+          kubectl get pods -n task-management-system
+          kubectl get services -n task-management-system
+          kubectl get ingress -n task-management-system
+
+  notify:
+    name: Send Notifications
+    needs: deploy-services
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Notify Success
+        if: success()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          slack-message: "✅ Release to ${{ env.RELEASE_ENV }} completed successfully!"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: Notify Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          slack-message: "❌ Release to ${{ env.RELEASE_ENV }} failed! Please check the logs."
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+# Human Tasks:
+# 1. Configure AWS credentials in GitHub repository secrets
+# 2. Set up Kubernetes cluster access and add kubeconfig to secrets
+# 3. Configure Slack webhook URL for notifications
+# 4. Review and adjust resource limits in Kubernetes manifests
+# 5. Set up monitoring for the deployment process
+# 6. Configure backup strategy before deployments
+# 7. Set up proper access controls for production deployments
