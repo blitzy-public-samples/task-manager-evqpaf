@@ -1,0 +1,39 @@
+# Kubernetes version: 1.26+
+# Purpose: Defines the default StorageClass for managing persistent volumes in the Task Management System
+#
+# Requirements addressed:
+# 1. Technical Specification/System Architecture/2.2 Component Details - Persistent Storage Management
+#    - Implements efficient and scalable management of persistent storage for services in the Kubernetes cluster
+# 2. Technical Specification/System Architecture/2.2 Component Details - Data Persistence
+#    - Provides persistent storage for stateful services such as databases and file storage
+#
+# Human Tasks:
+# 1. Ensure AWS EBS is properly configured and accessible in the Kubernetes cluster
+# 2. Verify IAM roles and permissions for EBS volume management
+# 3. Review and adjust storage parameters (type, size) based on production workload requirements
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: task-management-storage-class
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+  labels:
+    app: task-management
+spec:
+  provisioner: kubernetes.io/aws-ebs
+  parameters:
+    # AWS EBS volume type (gp2 for general purpose SSD)
+    type: gp2
+    # File system type for the volumes
+    fsType: ext4
+  # Retain volumes when PVCs are deleted to prevent data loss
+  reclaimPolicy: Retain
+  # Only provision volume when pod using the PVC is scheduled
+  volumeBindingMode: WaitForFirstConsumer
+  # Allow volume expansion if needed
+  allowVolumeExpansion: true
+  # Mount options for the volumes
+  mountOptions:
+    - debug
+    - noatime
