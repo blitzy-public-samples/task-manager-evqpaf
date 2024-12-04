@@ -1,0 +1,66 @@
+# Requirement: Docker Build Optimization
+# Location: Technical Specification/4.5 Development & Deployment/Docker Configuration
+# Ensures that unnecessary files and sensitive data are excluded from the Docker build context
+# to optimize the build process and enhance security.
+
+# Dependencies
+node_modules
+
+# Build output
+dist
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Version control
+.git
+.gitignore
+
+# Development configuration
+.eslintrc.*
+.prettierrc
+
+# Testing
+tests
+
+# Documentation
+README.md
+
+# Docker files
+Dockerfile
+docker-compose.*
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Cache directories
+.npm
+.eslintcache
+.stylelintcache
+.prettiercache
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Coverage directory
+coverage
+
+# Temporary files
+.DS_Store
+Thumbs.db
