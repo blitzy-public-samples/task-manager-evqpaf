@@ -1,0 +1,36 @@
+# Kubernetes version: 1.26+
+#
+# Purpose: Defines the Kubernetes Service resource for exposing Prometheus monitoring system
+#
+# Requirements addressed:
+# - Technical Specification/System Architecture/2.4 Cross-Cutting Concerns
+#   Ensures system monitoring and alerting using Prometheus for performance and health monitoring
+#   by exposing Prometheus service within the cluster
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-service
+  namespace: task-management-system  # References namespace from namespace.yaml
+  labels:
+    app: prometheus
+    component: monitoring
+  annotations:
+    description: "Prometheus monitoring service endpoint"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+
+spec:
+  # Selector matches labels from prometheus-deployment pods
+  selector:
+    app: prometheus
+    component: monitoring
+
+  # Service port configuration
+  ports:
+    - protocol: TCP
+      port: 9090        # Port the service listens on
+      targetPort: 9090  # Port on the pod to forward to
+
+  # ClusterIP type makes the service only accessible within the cluster
+  type: ClusterIP
