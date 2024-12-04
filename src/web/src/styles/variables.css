@@ -1,0 +1,114 @@
+/**
+ * Global CSS Variables
+ * 
+ * Requirements Addressed:
+ * - Theme Support (Technical Specification/3.1 User Interface Design/3.1.1 Design Specifications)
+ *   Provides CSS variables for system-default theme detection and theme customization
+ * - Responsive Design (Technical Specification/3.1 User Interface Design/3.1.1 Design Specifications)
+ *   Defines spacing units and breakpoints for consistent responsive layouts
+ * - Accessibility (Technical Specification/3.1 User Interface Design/3.1.1 Design Specifications)
+ *   Implements WCAG 2.1 Level AA compliant color contrast ratios and typography
+ */
+
+:root {
+  /* Base Colors - Light Theme */
+  --primary-color: #2196F3;
+  --secondary-color: #64B5F6;
+  --background-color: #FFFFFF;
+  --text-color: #333333;
+  --border-color: #E0E0E0;
+
+  /* Typography */
+  --font-family: 'Roboto', sans-serif;
+  --font-size-xs: 0.75rem;    /* 12px */
+  --font-size-sm: 0.875rem;   /* 14px */
+  --font-size-base: 1rem;     /* 16px */
+  --font-size-lg: 1.125rem;   /* 18px */
+  --font-size-xl: 1.25rem;    /* 20px */
+  --font-size-2xl: 1.5rem;    /* 24px */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* Spacing */
+  --spacing-unit: 8px;
+  --spacing-xs: calc(var(--spacing-unit) * 0.5);  /* 4px */
+  --spacing-sm: var(--spacing-unit);              /* 8px */
+  --spacing-md: calc(var(--spacing-unit) * 2);    /* 16px */
+  --spacing-lg: calc(var(--spacing-unit) * 3);    /* 24px */
+  --spacing-xl: calc(var(--spacing-unit) * 4);    /* 32px */
+  --spacing-2xl: calc(var(--spacing-unit) * 6);   /* 48px */
+
+  /* Border Radius */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  /* Z-index */
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-popover: 1060;
+  --z-index-tooltip: 1070;
+
+  /* Transitions */
+  --transition-fast: 150ms;
+  --transition-normal: 250ms;
+  --transition-slow: 350ms;
+  --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark Theme - Applied when .dark-theme class is present on body or when system prefers dark color scheme */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light-theme) {
+    --primary-color: #64B5F6;
+    --secondary-color: #2196F3;
+    --background-color: #1E1E1E;
+    --text-color: #FFFFFF;
+    --border-color: #424242;
+  }
+}
+
+.dark-theme {
+  --primary-color: #64B5F6;
+  --secondary-color: #2196F3;
+  --background-color: #1E1E1E;
+  --text-color: #FFFFFF;
+  --border-color: #424242;
+}
+
+/* High Contrast Mode - Applied when system prefers high contrast */
+@media (prefers-contrast: high) {
+  :root {
+    --primary-color: #0000FF;
+    --secondary-color: #000000;
+    --background-color: #FFFFFF;
+    --text-color: #000000;
+    --border-color: #000000;
+  }
+}
+
+/* Responsive Breakpoints */
+@custom-media --mobile (max-width: 639px);
+@custom-media --tablet (min-width: 640px) and (max-width: 1023px);
+@custom-media --desktop (min-width: 1024px);
+
+/* Reduced Motion - Applied when system prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0ms;
+    --transition-normal: 0ms;
+    --transition-slow: 0ms;
+  }
+}
