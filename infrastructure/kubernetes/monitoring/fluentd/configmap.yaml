@@ -1,0 +1,94 @@
+# Kubernetes version: 1.26+
+#
+# Requirements addressed:
+# Technical Specification/System Architecture/2.4 Cross-Cutting Concerns - System Monitoring
+# - Implements centralized log aggregation using Fluentd to collect container logs
+# - Forwards logs to Elasticsearch for storage and analysis
+#
+# Human Tasks Required:
+# 1. Verify Elasticsearch service is deployed and accessible at the specified endpoint
+# 2. Ensure proper permissions for Fluentd to access container logs
+# 3. Verify log retention policies align with organizational requirements
+# 4. Monitor log buffer sizes and adjust if needed based on load
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-config
+  namespace: task-management-system
+  labels:
+    app: fluentd
+    component: monitoring
+  annotations:
+    description: "Fluentd configuration for container log collection and forwarding to Elasticsearch"
+
+data:
+  fluent.conf: |
+    # Input plugin for tailing container logs
+    <source>
+      @type tail
+      path /var/log/containers/*.log
+      pos_file /var/log/fluentd-containers.log.pos
+      tag kubernetes.*
+      format json
+      
+      # Additional parsing configuration
+      time_format %Y-%m-%dT%H:%M:%S.%NZ
+      keep_time_key true
+      read_from_head true
+      
+      # Add container metadata
+      <parse>
+        @type json
+        time_key time
+        time_format %Y-%m-%dT%H:%M:%S.%NZ
+      </parse>
+    </source>
+
+    # Filter plugin to enhance logs with Kubernetes metadata
+    <filter kubernetes.**>
+      @type kubernetes_metadata
+      kubernetes_url "#{ENV['KUBERNETES_URL']}"
+      cache_size 1000
+      watch false
+      verify_ssl false
+    </filter>
+
+    # Output configuration for Elasticsearch
+    <match kubernetes.**>
+      @type elasticsearch
+      host elasticsearch.task-management-system.svc.cluster.local
+      port 9200
+      logstash_format true
+      logstash_prefix fluentd
+      logstash_dateformat %Y.%m.%d
+      include_tag_key true
+      tag_key @log_name
+      
+      # Buffer configuration for reliability
+      <buffer>
+        @type file
+        path /var/log/fluentd-buffers/kubernetes.system.buffer
+        flush_mode interval
+        retry_type exponential_backoff
+        flush_thread_count 2
+        flush_interval 5s
+        retry_forever false
+        retry_max_interval 30
+        chunk_limit_size 2M
+        queue_limit_length 8
+        overflow_action block
+      </buffer>
+
+      # Connection configuration
+      reconnect_on_error true
+      reload_on_failure true
+      reload_connections false
+      request_timeout 30s
+    </match>
+
+    # System-wide configurations
+    <system>
+      log_level info
+      workers 1
+    </system>
