@@ -1,0 +1,19 @@
+# Kubernetes version: 1.26+
+# Purpose: Defines the namespace for isolating Task Management System resources
+# Requirement addressed: Technical Specification/System Architecture/2.3.2 Communication Patterns
+#   - Ensures logical isolation of resources within the Kubernetes cluster using namespaces
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: task-management-system
+  labels:
+    app: task-management
+    # Additional labels for resource organization and selection
+    environment: production
+    managed-by: kubernetes
+    version: v1
+  annotations:
+    description: "Namespace for Task Management System components"
+    owner: "platform-team"
+    contact: "platform@organization.com"
